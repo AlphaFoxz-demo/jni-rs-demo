@@ -23,19 +23,14 @@ public class Test {
         for (int i = 0; i < 10_0000; i++) {
             new ComplexObject();
         }
-        System.err.println(System.currentTimeMillis() - t);
+        System.out.println("native spent(ms): " + (System.currentTimeMillis() - t));
         System.gc();
         t = System.currentTimeMillis();
         for (int i = 0; i < 10_0000; i++) {
             // alloc();
             allocWithCache();
-            // System.err.println("loop: " + i + ", spent(ms): " + (System.currentTimeMillis() - t));
-//        List<ComplexObject> list1 = new ArrayList<>();
-//        for (int i = 0; i < 10_0000; i++) {
-//            update(new ComplexObject());
-//        }
-//        List<ComplexObject> list2 = list();
         }
+        System.out.println("jni spent(ms): " + (System.currentTimeMillis() - t));
     }
 
 }
