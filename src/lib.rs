@@ -27,7 +27,7 @@ pub unsafe extern "C" fn Java_Test_alloc(mut env: JNIEnv<'static>, _: JClass) ->
     let j_class = env
         .find_class("example/ComplexObject")
         .expect("class not found");
-    // println!("{:p}", *j_class);
+    println!("class addr: {:p}", **j_class);
     let entity = env.alloc_object(&j_class).expect("alloc failed");
     let name_field = env
         .get_field_id(&j_class, "name", "Ljava/lang/String;")
@@ -69,7 +69,8 @@ fn get_cached_class(
         if class.is_some() {
             println!("hit cache");
             let class = class.unwrap();
-            println!("read cache: {:p}", class.as_raw());
+            let ptr = class.as_raw();
+            println!("read cache: {:p}", ptr);
             return (env, unsafe { JClass::from_raw(class.as_raw()) });
         } else {
             println!("not hit cache");
@@ -80,7 +81,8 @@ fn get_cached_class(
     // or find from env
     let class = env.find_class(class_name).expect("class not found");
     let class_wrapper = unsafe { JClass::from_raw(class.as_raw()) };
-    println!("write cache: {:p}", class_wrapper.as_raw());
+    let ptr = class_wrapper.as_raw();
+    println!("write cache: {:p}", ptr);
     cache.insert(class_name.to_string(), class_wrapper);
 
     (env, class)
