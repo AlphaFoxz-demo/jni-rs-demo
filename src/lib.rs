@@ -6,6 +6,7 @@ use std::sync::RwLock;
 
 static CLASS_CACHE: Lazy<RwLock<HashMap<String, JClass<'static>>>> =
     Lazy::new(|| RwLock::new(HashMap::new()));
+static mut COUNT: std::sync::atomic::AtomicI32 = std::sync::atomic::AtomicI32::new(0);
 
 #[no_mangle]
 pub extern "C" fn Java_Test_update(mut env: JNIEnv, _class: JClass, complex_object: JObject) -> () {
@@ -62,18 +63,31 @@ fn get_cached_class(
     mut env: JNIEnv<'static>,
     class_name: &str,
 ) -> (JNIEnv<'static>, JClass<'static>) {
+    unsafe {
+        COUNT.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+        println!("reading cache {:?}", &COUNT.get_mut());
+    };
     {
         let cache = CLASS_CACHE.read().unwrap();
         // first try from cache
-        let class = cache.get(class_name);
-        if class.is_some() {
-            println!("hit cache");
-            let class = class.unwrap();
-            let ptr = class.as_raw();
-            println!("read cache: {:p}", ptr);
-            return (env, unsafe { JClass::from_raw(class.as_raw()) });
-        } else {
-            println!("not hit cache");
+        match cache.get(class_name) {
+            Some(class) => {
+                // let offset = unsafe { (COUNT.get_mut().clone() / 256 * 8) as isize };
+                let offset = unsafe {
+                    match COUNT.get_mut().clone() % 256 {
+                        0 => 8,
+                        _ => 0,
+                    }
+                };
+                let ptr = class.as_raw().wrapping_byte_offset(offset.clone());
+                let check_class = env.find_class(class_name).expect("class not found");
+                println!("check addr: {:p}", check_class.into_raw());
+                println!("read cache: {:p}", ptr);
+                return (env, unsafe { JClass::from_raw(ptr) });
+            }
+            None => {
+                println!("not hit cache");
+            }
         }
     }
     let mut cache = CLASS_CACHE.write().unwrap();
