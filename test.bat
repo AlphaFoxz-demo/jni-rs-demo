@@ -1,5 +1,5 @@
 cargo build --release
 cd java
-del Test.class
+del *.class
 javac ./Test.java
 java Test
